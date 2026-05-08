@@ -20,6 +20,7 @@ import { cn } from "@/lib/utils";
 import { formatCurrency } from "@/lib/format";
 import { CartLineQuantityControls } from "@/features/cart/cart-line-quantity-controls";
 import { formatKgFr, lineSubtotalForWeight, pricePerKg } from "@/lib/product-pricing";
+import { useMounted } from "@/hooks/use-mounted";
 
 type Line = {
   productId: string;
@@ -37,6 +38,12 @@ export function CartSheet({
   totals: { subtotal: number; discount: number; total: number };
 }) {
   const remove = useCartStore((s) => s.remove);
+  const mounted = useMounted();
+
+  /** Données persistées : aligner SSR et premier rendu client pour éviter erreurs d’hydratation. */
+  const displayLines = mounted ? linesDetail : [];
+  const displayTotals = mounted ? totals : { subtotal: 0, discount: 0, total: 0 };
+  const showBadge = mounted && cartCount > 0;
 
   /** Panier : tirage depuis le bas mobile, colonne à droite dès md (tailwind). */
   const [cartSide, setCartSide] = useState<"bottom" | "right">("bottom");
@@ -59,7 +66,7 @@ export function CartSheet({
         )}
       >
         <ShoppingBag className="size-5" />
-        {cartCount > 0 && (
+        {showBadge && (
           <span className="absolute -right-1 -top-1 inline-flex min-h-5 min-w-5 items-center justify-center rounded-full bg-brand-orange px-1 text-[10px] font-bold text-white shadow">
             {cartCount}
           </span>
@@ -93,7 +100,7 @@ export function CartSheet({
               : "max-h-[calc(92dvh-13.5rem)] min-h-[10rem] px-4 pt-4"
           }
         >
-          {linesDetail.length === 0 ? (
+          {displayLines.length === 0 ? (
             <div className="flex flex-col gap-3 rounded-3xl border border-dashed border-border p-10 text-center text-sm text-muted-foreground">
               <p>Votre panier est léger comme une salade iceberg.</p>
               <Button asChild className="mx-auto rounded-2xl">
@@ -102,7 +109,7 @@ export function CartSheet({
             </div>
           ) : (
             <div className="flex flex-col gap-4 pb-4">
-              {linesDetail.map((line) =>
+              {displayLines.map((line) =>
                 line.p ? (
                   <div
                     key={line.productId}
@@ -152,18 +159,18 @@ export function CartSheet({
           <div className="space-y-2 text-sm">
             <div className="flex justify-between">
               <span className="text-muted-foreground">Sous-total</span>
-              <span>{formatCurrency(totals.subtotal)}</span>
+              <span>{formatCurrency(displayTotals.subtotal)}</span>
             </div>
             <div className="flex justify-between">
               <span className="text-muted-foreground">Promo</span>
-              <span className={totals.discount > 0 ? "text-primary" : ""}>
-                −{formatCurrency(totals.discount)}
+              <span className={displayTotals.discount > 0 ? "text-primary" : ""}>
+                −{formatCurrency(displayTotals.discount)}
               </span>
             </div>
             <Separator className="my-3" />
             <div className="flex justify-between text-base font-semibold">
               <span>Total</span>
-              <span>{formatCurrency(totals.total)}</span>
+              <span>{formatCurrency(displayTotals.total)}</span>
             </div>
           </div>
           <Button asChild className="mt-5 h-11 w-full rounded-2xl bg-primary hover:bg-brand-dark hover:text-white">

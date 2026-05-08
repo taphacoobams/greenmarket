@@ -7,6 +7,7 @@ import { Home, LayoutGrid, ShoppingCart, User } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useCartStore } from "@/store/cart-store";
 import { useAuthStore } from "@/store/auth-store";
+import { useMounted } from "@/hooks/use-mounted";
 
 const items = [
   { href: "/", label: "Accueil", icon: Home },
@@ -19,6 +20,7 @@ export function MobileBottomNav() {
   const pathname = usePathname();
   const count = useCartStore((s) => s.getTotals().count);
   const user = useAuthStore((s) => s.user);
+  const mounted = useMounted();
 
   const navItems = useMemo(
     () =>
@@ -49,7 +51,7 @@ export function MobileBottomNav() {
             >
               <span className="relative inline-flex size-9 items-center justify-center rounded-2xl bg-muted/60">
                 <Icon className="size-5" />
-                {href === "/cart" && count > 0 && (
+                {href === "/cart" && mounted && count > 0 && (
                   <span className="absolute -right-1 -top-1 flex size-4 items-center justify-center rounded-full bg-brand-orange text-[9px] font-bold text-white">
                     {count}
                   </span>

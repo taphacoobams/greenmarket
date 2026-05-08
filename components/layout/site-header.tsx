@@ -39,6 +39,7 @@ import { MOCK_PRODUCTS } from "@/mock/products";
 import { formatCurrency, formatDateFr } from "@/lib/format";
 import { formatKgFr } from "@/lib/product-pricing";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { useMounted } from "@/hooks/use-mounted";
 
 const nav = [
   { href: "/", label: "Accueil" },
@@ -81,6 +82,8 @@ export function SiteHeader() {
       ).slice(0, 5),
     [notificationItems],
   );
+
+  const mounted = useMounted();
 
   return (
     <header className="sticky top-0 z-50 border-b border-border/70 bg-background/95 pt-[env(safe-area-inset-top,0px)] backdrop-blur-xl">
@@ -294,13 +297,15 @@ export function SiteHeader() {
               </Button>
             </>
           )}
-          <Badge variant="outline" className="hidden shrink-0 items-center rounded-2xl border-border px-2.5 py-2 text-[0.7rem] xl:inline-flex">
-            <span className="tabular-nums">{cartTotals.count} art.</span>
-            <span className="mx-2 text-muted-foreground">·</span>
-            <span className="tabular-nums">{formatKgFr(cartTotals.totalKg)} kg</span>
-            <span className="mx-2 text-muted-foreground">·</span>
-            <span className="tabular-nums">{formatCurrency(cartTotals.total)}</span>
-          </Badge>
+          {mounted && (
+            <Badge variant="outline" className="hidden shrink-0 items-center rounded-2xl border-border px-2.5 py-2 text-[0.7rem] xl:inline-flex">
+              <span className="tabular-nums">{cartTotals.count} art.</span>
+              <span className="mx-2 text-muted-foreground">·</span>
+              <span className="tabular-nums">{formatKgFr(cartTotals.totalKg)} kg</span>
+              <span className="mx-2 text-muted-foreground">·</span>
+              <span className="tabular-nums">{formatCurrency(cartTotals.total)}</span>
+            </Badge>
+          )}
         </div>
       </div>
 
