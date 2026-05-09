@@ -12,6 +12,8 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { formatCurrency } from "@/lib/format";
+import { productImageNeedsUnoptimized } from "@/lib/product-image";
+import { unitRetailPrice } from "@/lib/product-pricing";
 
 export default function AdminProductsPage() {
   return (
@@ -19,7 +21,7 @@ export default function AdminProductsPage() {
       <div className="flex flex-wrap items-center justify-between gap-4">
         <div>
           <h1 className="text-3xl font-bold">Produits</h1>
-          <p className="text-muted-foreground">{MOCK_PRODUCTS.length} références catalogue</p>
+          <p className="text-muted-foreground">Légumes — même logique prix que la vitrine (kg / pièce)</p>
         </div>
         <Button asChild className="rounded-2xl bg-primary hover:bg-brand-dark hover:text-white">
           <Link href="/admin/products/new">Nouveau</Link>
@@ -32,22 +34,29 @@ export default function AdminProductsPage() {
               <TableHead>Visuel</TableHead>
               <TableHead>Nom</TableHead>
               <TableHead>Stock</TableHead>
-              <TableHead>Prix</TableHead>
+              <TableHead>Unité</TableHead>
+              <TableHead>Prix affiché</TableHead>
+              <TableHead>Prix lot (réf.)</TableHead>
               <TableHead>Étiquettes</TableHead>
               <TableHead />
             </TableRow>
           </TableHeader>
           <TableBody>
-            {MOCK_PRODUCTS.slice(0, 20).map((p) => (
+            {MOCK_PRODUCTS.map((p) => (
               <TableRow key={p.id}>
                 <TableCell className="w-[72px]">
                   <div className="relative size-12 overflow-hidden rounded-xl bg-muted">
-                    <Image src={p.image} alt="" fill sizes="48px" className="object-cover" />
+                    <Image src={p.image} alt="" fill sizes="48px" className="object-cover" unoptimized={productImageNeedsUnoptimized(p.image)} />
                   </div>
                 </TableCell>
                 <TableCell className="font-medium">{p.name}</TableCell>
                 <TableCell>{p.stock}</TableCell>
-                <TableCell>{formatCurrency(p.price)}</TableCell>
+                <TableCell className="text-muted-foreground">{p.saleUnit === "piece" ? "Pièce" : "Kg"}</TableCell>
+                <TableCell className="font-medium">
+                  {formatCurrency(unitRetailPrice(p))}
+                  <span className="text-muted-foreground"> / {p.saleUnit === "piece" ? "pièce" : "kg"}</span>
+                </TableCell>
+                <TableCell className="text-muted-foreground tabular-nums">{formatCurrency(p.price)}</TableCell>
                 <TableCell>
                   {p.promo && <Badge className="mr-1 rounded-full bg-brand-orange">promo</Badge>}
                   {p.bio && <Badge variant="outline">bio</Badge>}

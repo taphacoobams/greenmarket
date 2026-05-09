@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { ShoppingBag } from "lucide-react";
 import { Button, buttonVariants } from "@/components/ui/button";
 import {
@@ -15,12 +16,16 @@ import {
 import { Separator } from "@/components/ui/separator";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { useCartStore } from "@/store/cart-store";
+import { useAuthStore } from "@/store/auth-store";
 import type { Product } from "@/types";
 import { cn } from "@/lib/utils";
 import { formatCurrency } from "@/lib/format";
 import { CartLineQuantityControls } from "@/features/cart/cart-line-quantity-controls";
-import { formatKgFr, lineSubtotalForWeight, pricePerKg } from "@/lib/product-pricing";
+import { formatKgFr, isPieceProduct, lineSubtotalForWeight, unitRetailPrice } from "@/lib/product-pricing";
+import { productImageNeedsUnoptimized } from "@/lib/product-image";
 import { useMounted } from "@/hooks/use-mounted";
+import { toast } from "sonner";
+import { loginHref, useAuthPersistReady } from "@/features/checkout/checkout-auth-gate";
 
 type Line = {
   productId: string;
@@ -37,8 +42,25 @@ export function CartSheet({
   cartCount: number;
   totals: { subtotal: number; discount: number; total: number };
 }) {
+  const router = useRouter();
+  const user = useAuthStore((s) => s.user);
+  const authReady = useAuthPersistReady();
   const remove = useCartStore((s) => s.remove);
   const mounted = useMounted();
+  const [open, setOpen] = useState(false);
+
+  const closeCart = () => setOpen(false);
+
+  function handleCommander() {
+    closeCart();
+    if (!authReady) return;
+    if (!user) {
+      toast.message("Connexion requise", { description: "Connectez-vous pour finaliser la commande." });
+      router.push(loginHref("/checkout"));
+      return;
+    }
+    router.push("/checkout");
+  }
 
   /** Données persistées : aligner SSR et premier rendu client pour éviter erreurs d’hydratation. */
   const displayLines = mounted ? linesDetail : [];
@@ -56,7 +78,7 @@ export function CartSheet({
   }, []);
 
   return (
-    <Sheet>
+    <Sheet open={open} onOpenChange={setOpen}>
       <SheetTrigger
         type="button"
         aria-label="Panier"
@@ -104,7 +126,9 @@ export function CartSheet({
             <div className="flex flex-col gap-3 rounded-3xl border border-dashed border-border p-10 text-center text-sm text-muted-foreground">
               <p>Votre panier est léger comme une salade iceberg.</p>
               <Button asChild className="mx-auto rounded-2xl">
-                <Link href="/shop">Parcourir le catalogue</Link>
+                <Link href="/shop" onClick={closeCart}>
+                  Parcourir le catalogue
+                </Link>
               </Button>
             </div>
           ) : (
@@ -122,17 +146,21 @@ export function CartSheet({
                         fill
                         sizes="96px"
                         className="object-cover"
+                        unoptimized={productImageNeedsUnoptimized(line.p.image)}
                       />
                     </div>
                     <div className="flex min-w-0 flex-1 flex-col gap-1">
                       <Link
                         href={`/shop/${line.p.slug}`}
+                        onClick={closeCart}
                         className="truncate font-semibold leading-snug hover:underline"
                       >
                         {line.p.name}
                       </Link>
                       <p className="text-sm text-muted-foreground">
-                        {formatCurrency(pricePerKg(line.p))} / kg × {formatKgFr(line.weightKg)} kg
+                        {isPieceProduct(line.p)
+                          ? `${formatCurrency(unitRetailPrice(line.p))} / pièce × ${Math.round(line.weightKg)} pièce(s)`
+                          : `${formatCurrency(unitRetailPrice(line.p))} / kg × ${formatKgFr(line.weightKg)} kg`}
                       </p>
                       <p className="text-sm font-semibold text-foreground">
                         {formatCurrency(lineSubtotalForWeight(line.p, line.weightKg))}
@@ -173,9 +201,21 @@ export function CartSheet({
               <span>{formatCurrency(displayTotals.total)}</span>
             </div>
           </div>
-          <Button asChild className="mt-5 h-11 w-full rounded-2xl bg-primary hover:bg-brand-dark hover:text-white">
-            <Link href="/cart">Voir le panier</Link>
-          </Button>
+          <div className="mt-5 flex flex-col gap-3">
+            <Button
+              type="button"
+              className="h-11 w-full rounded-2xl bg-primary hover:bg-brand-dark hover:text-white"
+              disabled={!authReady || displayLines.length === 0}
+              onClick={handleCommander}
+            >
+              Commander
+            </Button>
+            <Button asChild variant="outline" className="h-11 w-full rounded-2xl">
+              <Link href="/cart" onClick={closeCart}>
+                Voir le panier
+              </Link>
+            </Button>
+          </div>
         </div>
       </SheetContent>
     </Sheet>

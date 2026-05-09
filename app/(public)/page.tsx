@@ -1,12 +1,12 @@
 import Link from "next/link";
 import Image from "next/image";
 import { ArrowRight, Sparkles } from "lucide-react";
-import { MOCK_CATEGORIES } from "@/mock/categories";
+import { MOCK_PRODUCTS } from "@/mock/products";
 import { getFeaturedProducts, filterProducts } from "@/services/product-service";
 import { Button } from "@/components/ui/button";
 import { ProductCard } from "@/components/shared/product-card";
 import { Badge } from "@/components/ui/badge";
-import { Card } from "@/components/ui/card";
+import { HomeAboutSection } from "@/features/marketing/home-about-section";
 
 export default function HomePage() {
   const featured = getFeaturedProducts(10);
@@ -49,7 +49,7 @@ export default function HomePage() {
             <dl className="grid grid-cols-3 gap-4 border-t border-dashed border-border/80 pt-6 text-[0.8rem] sm:text-[0.9rem]">
               <div className="space-y-1">
                 <dt className="uppercase tracking-wide text-muted-foreground">SKU actifs</dt>
-                <dd className="text-2xl font-bold tabular-nums text-foreground sm:text-3xl">24</dd>
+                <dd className="text-2xl font-bold tabular-nums text-foreground sm:text-3xl">13</dd>
               </div>
               <div className="space-y-1">
                 <dt className="uppercase tracking-wide text-muted-foreground">Livraison</dt>
@@ -82,36 +82,24 @@ export default function HomePage() {
         </div>
       </section>
 
+      <HomeAboutSection />
+
       <section className="mx-auto max-w-7xl space-y-8 px-4 py-16 md:px-8 lg:px-10">
         <div className="flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
           <div>
-            <p className="text-xs font-bold uppercase tracking-[0.2em] text-primary">Rayons</p>
-            <h2 className="text-3xl font-bold tracking-tight">Catégories signature</h2>
+            <p className="text-xs font-bold uppercase tracking-[0.2em] text-primary">Catalogue</p>
+            <h2 className="text-3xl font-bold tracking-tight">Nos produits</h2>
+            <p className="mt-2 max-w-xl text-muted-foreground">
+              Prix au kg ou à la pièce selon les références — sélection actuelle du marché.
+            </p>
           </div>
           <Button asChild variant="ghost" className="rounded-2xl text-primary">
-            <Link href="/categories">Tout afficher</Link>
+            <Link href="/shop">Voir tout le catalogue</Link>
           </Button>
         </div>
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-          {MOCK_CATEGORIES.slice(0, 4).map((c) => (
-            <Link key={c.id} href={`/categories/${c.slug}`} className="group">
-              <Card className="overflow-hidden rounded-[1.75rem] border-border/80 bg-card shadow-sm transition group-hover:-translate-y-1 group-hover:shadow-xl">
-                <div className="relative aspect-[16/10]">
-                  <Image
-                    src={c.image}
-                    alt={c.name}
-                    fill
-                    sizes="(min-width: 1024px) 25vw, (min-width: 640px) 50vw, 100vw"
-                    className="object-cover transition duration-500 group-hover:scale-105"
-                  />
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
-                  <div className="absolute bottom-4 left-4 text-white">
-                    <p className="text-lg font-semibold">{c.name}</p>
-                    <p className="text-sm text-white/80">{c.productCount} références</p>
-                  </div>
-                </div>
-              </Card>
-            </Link>
+        <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+          {MOCK_PRODUCTS.map((p) => (
+            <ProductCard key={p.id} product={p} />
           ))}
         </div>
       </section>
@@ -122,7 +110,7 @@ export default function HomePage() {
             <p className="text-xs font-bold uppercase tracking-[0.2em] text-brand-orange">Sélection</p>
             <h3 className="text-3xl font-bold tracking-tight">Promotions · quantités limitées</h3>
             <p className="max-w-xl text-muted-foreground">
-              Prix cassés sur une sélection de fruits et légumes — jusqu&apos;à épuisement du stock affiché.
+              Prix cassés sur une sélection de légumes frais — jusqu&apos;à épuisement du stock affiché.
             </p>
           </div>
           <div className="grid flex-[1.2] gap-6 sm:grid-cols-2">

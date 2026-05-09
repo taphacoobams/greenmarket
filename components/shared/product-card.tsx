@@ -6,12 +6,20 @@ import { motion } from "framer-motion";
 import { ShoppingBag, Star } from "lucide-react";
 import type { Product } from "@/types";
 import { formatCurrency } from "@/lib/format";
-import { formatKgFr, oldPricePerKg, pricePerKg, referenceWeightKg } from "@/lib/product-pricing";
+import {
+  formatKgFr,
+  isPieceProduct,
+  oldPricePerKg,
+  referenceWeightKg,
+  retailUnitShort,
+  unitRetailPrice,
+} from "@/lib/product-pricing";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { useCartStore } from "@/store/cart-store";
 import { ProductFavoriteButton } from "@/components/shared/product-favorite-button";
+import { productImageNeedsUnoptimized } from "@/lib/product-image";
 import { cn } from "@/lib/utils";
 
 export function ProductCard({
@@ -39,6 +47,7 @@ export function ProductCard({
             sizes="(min-width: 1024px) 33vw, (min-width: 640px) 45vw, 100vw"
             className="object-cover transition duration-500 group-hover:scale-[1.04]"
             priority={false}
+            unoptimized={productImageNeedsUnoptimized(product.image)}
           />
           <Link
             href={`/shop/${product.slug}`}
@@ -80,24 +89,39 @@ export function ProductCard({
           <div className="mt-auto flex items-end justify-between gap-3 pt-2">
             <div>
               <p className="text-lg font-bold text-foreground">
-                {formatCurrency(pricePerKg(product))}
-                <span className="text-xs font-semibold text-muted-foreground"> / kg</span>
+                {formatCurrency(unitRetailPrice(product))}
+                <span className="text-xs font-semibold text-muted-foreground">
+                  {" "}
+                  / {retailUnitShort(product)}
+                </span>
               </p>
               {product.oldPrice != null && (
                 <p className="text-xs text-muted-foreground line-through">
-                  {formatCurrency(oldPricePerKg(product)!)} / kg
+                  {formatCurrency(oldPricePerKg(product)!)} / {retailUnitShort(product)}
                 </p>
               )}
               <p className="mt-1 text-[0.74rem] text-muted-foreground">
-                Lot réf. {formatKgFr(referenceWeightKg(product))} kg · {formatCurrency(product.price)}
+                {isPieceProduct(product) ? (
+                  <>À la pièce · prix catalogue</>
+                ) : (
+                  <>
+                    Lot réf. {formatKgFr(referenceWeightKg(product))} kg · {formatCurrency(product.price)}
+                  </>
+                )}
               </p>
             </div>
             <Button
               size="icon-sm"
               className="rounded-2xl bg-primary hover:bg-brand-dark hover:text-white"
               disabled={product.availability === "out_of_stock"}
-              onClick={() => addKg(product.id, referenceWeightKg(product))}
-              aria-label={`Ajouter ${formatKgFr(referenceWeightKg(product))} kg au panier`}
+              onClick={() =>
+                addKg(product.id, isPieceProduct(product) ? 1 : referenceWeightKg(product))
+              }
+              aria-label={
+                isPieceProduct(product)
+                  ? "Ajouter 1 pièce au panier"
+                  : `Ajouter ${formatKgFr(referenceWeightKg(product))} kg au panier`
+              }
             >
               <ShoppingBag className="size-4" aria-hidden />
             </Button>

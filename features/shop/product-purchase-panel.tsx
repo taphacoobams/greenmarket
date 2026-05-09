@@ -8,40 +8,145 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { formatCurrency } from "@/lib/format";
 import {
-  clampMinOrderKg,
+  clampLineWeight,
   formatKgFr,
+  isPieceProduct,
   lineSubtotalForWeight,
   MIN_ORDER_KG,
   oldPricePerKg,
-  pricePerKg,
   referenceWeightKg,
   roundWeightKg,
+  unitRetailPrice,
 } from "@/lib/product-pricing";
 import { useMemo, useState } from "react";
 import { toast } from "sonner";
 
 const STEP = 0.25;
 
-export function ProductPurchasePanel({ product }: { product: Product }) {
+function PiecePurchaseFlow({ product }: { product: Product }) {
   const lines = useCartStore((s) => s.lines);
   const addKg = useCartStore((s) => s.addKg);
-  const inCartKg = lines.find((l) => l.productId === product.id)?.weightKg ?? 0;
+  const inCart = lines.find((l) => l.productId === product.id)?.weightKg ?? 0;
+
+  const [pieces, setPieces] = useState(1);
+  const lineTotal = useMemo(() => lineSubtotalForWeight(product, pieces), [product, pieces]);
+  const pkg = unitRetailPrice(product);
+  const oldPkg = oldPricePerKg(product);
+
+  return (
+    <div className="flex flex-col gap-4">
+      <div className="flex flex-wrap items-baseline gap-2">
+        <p className="text-2xl font-bold text-primary sm:text-3xl">
+          {formatCurrency(pkg)}
+          <span className="text-base font-semibold text-muted-foreground"> / pièce</span>
+        </p>
+        {oldPkg != null && (
+          <p className="text-sm text-muted-foreground line-through">{formatCurrency(oldPkg)} / pièce</p>
+        )}
+      </div>
+      <p className="text-sm text-muted-foreground">
+        Vente à la pièce — indiquez combien de têtes ou unités vous souhaitez.
+      </p>
+
+      <div className="space-y-2">
+        <p className="text-sm font-medium text-foreground">Nombre de pièces</p>
+        <div className="inline-flex items-center gap-1 rounded-2xl border border-border bg-background p-1 shadow-inner">
+          <Button
+            type="button"
+            variant="outline"
+            size="icon-sm"
+            className="rounded-xl"
+            aria-label="Retirer une pièce"
+            onClick={() => setPieces((p) => Math.max(1, p - 1))}
+            disabled={pieces <= 1}
+          >
+            <Minus className="size-4" />
+          </Button>
+          <Input
+            type="number"
+            inputMode="numeric"
+            min={1}
+            step={1}
+            className="h-11 w-[4.25rem] rounded-xl text-center tabular-nums"
+            value={pieces}
+            onChange={(e) => {
+              const v = Number.parseInt(e.target.value.replace(/\D/g, ""), 10);
+              if (!Number.isFinite(v)) return;
+              setPieces(Math.max(1, Math.min(9999, v)));
+            }}
+          />
+          <Button
+            type="button"
+            variant="outline"
+            size="icon-sm"
+            className="rounded-xl"
+            aria-label="Ajouter une pièce"
+            onClick={() => setPieces((p) => Math.min(9999, p + 1))}
+          >
+            <Plus className="size-4" />
+          </Button>
+        </div>
+      </div>
+
+      <div className="rounded-2xl border border-primary/20 bg-brand-light/40 px-4 py-3 text-sm dark:bg-primary/10">
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <span className="text-muted-foreground">Total pour cette sélection</span>
+          <span className="text-lg font-bold text-primary">{formatCurrency(lineTotal)}</span>
+        </div>
+        <p className="mt-1 text-xs text-muted-foreground">
+          <strong className="text-foreground">{pieces}</strong> pièce(s)
+        </p>
+        {inCart > 0 && (
+          <p className="mt-2 border-t border-border/60 pt-2 text-muted-foreground">
+            Déjà dans le panier&nbsp;: <strong className="text-foreground">{Math.round(inCart)} pièce(s)</strong>
+          </p>
+        )}
+      </div>
+
+      <div className="flex flex-wrap gap-3">
+        <Button
+          type="button"
+          className="h-11 flex-1 rounded-2xl bg-primary hover:bg-brand-dark hover:text-white sm:flex-none sm:px-8"
+          disabled={product.availability === "out_of_stock"}
+          onClick={() => {
+            addKg(product.id, pieces);
+            toast.success("Ajouté au panier", {
+              description: `${pieces} pièce(s) · ${formatCurrency(lineTotal)}`,
+            });
+          }}
+        >
+          <ShoppingBag className="mr-2 size-4" aria-hidden />
+          Ajouter au panier
+        </Button>
+        <Button type="button" variant="outline" className="h-11 rounded-2xl" asChild>
+          <Link href="/cart">Voir le panier</Link>
+        </Button>
+      </div>
+    </div>
+  );
+}
+
+function KgPurchaseFlow({ product }: { product: Product }) {
+  const lines = useCartStore((s) => s.lines);
+  const addKg = useCartStore((s) => s.addKg);
+  const inCart = lines.find((l) => l.productId === product.id)?.weightKg ?? 0;
+
   const refKg = referenceWeightKg(product);
   const [articleCount, setArticleCount] = useState(1);
-  const [selectedKg, setSelectedKg] = useState(() => clampMinOrderKg(refKg));
+  const [selectedKg, setSelectedKg] = useState(() => clampLineWeight(product, refKg));
 
-  const pkg = pricePerKg(product);
+  const pkg = unitRetailPrice(product);
   const oldPkg = oldPricePerKg(product);
   const lineTotal = useMemo(() => lineSubtotalForWeight(product, selectedKg), [product, selectedKg]);
 
   function setArticles(nextCount: number) {
     const c = Math.max(1, Math.min(9999, Math.floor(Math.abs(nextCount)) || 1));
     setArticleCount(c);
-    setSelectedKg(clampMinOrderKg(roundWeightKg(c * refKg)));
+    setSelectedKg(clampLineWeight(product, roundWeightKg(c * refKg)));
   }
 
   function applyKg(next: number) {
-    setSelectedKg(clampMinOrderKg(roundWeightKg(next)));
+    setSelectedKg(clampLineWeight(product, roundWeightKg(next)));
   }
 
   const nominalKg = roundWeightKg(articleCount * refKg);
@@ -192,9 +297,9 @@ export function ProductPurchasePanel({ product }: { product: Product }) {
           Repère&nbsp;: {articleCount} article{articleCount > 1 ? "s" : ""} catalogue · Poids commandé&nbsp;:{" "}
           <strong className="text-foreground">{formatKgFr(selectedKg)} kg</strong>
         </p>
-        {inCartKg > 0 && (
+        {inCart > 0 && (
           <p className="mt-2 border-t border-border/60 pt-2 text-muted-foreground">
-            Déjà dans le panier&nbsp;: <strong className="text-foreground">{formatKgFr(inCartKg)} kg</strong>
+            Déjà dans le panier&nbsp;: <strong className="text-foreground">{formatKgFr(inCart)} kg</strong>
           </p>
         )}
       </div>
@@ -219,5 +324,13 @@ export function ProductPurchasePanel({ product }: { product: Product }) {
         </Button>
       </div>
     </div>
+  );
+}
+
+export function ProductPurchasePanel({ product }: { product: Product }) {
+  return isPieceProduct(product) ? (
+    <PiecePurchaseFlow product={product} />
+  ) : (
+    <KgPurchaseFlow product={product} />
   );
 }

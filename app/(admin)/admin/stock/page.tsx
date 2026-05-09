@@ -5,6 +5,8 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { formatCurrency } from "@/lib/format";
+import { productImageNeedsUnoptimized } from "@/lib/product-image";
+import { unitRetailPrice } from "@/lib/product-pricing";
 
 const availabilityLabel: Record<string, string> = {
   in_stock: "En stock",
@@ -29,7 +31,8 @@ export default function AdminStockPage() {
               <TableHead>Produit</TableHead>
               <TableHead>Stock</TableHead>
               <TableHead>Disponibilité</TableHead>
-              <TableHead>Prix</TableHead>
+              <TableHead>Unité</TableHead>
+              <TableHead>Prix affiché</TableHead>
               <TableHead />
             </TableRow>
           </TableHeader>
@@ -38,7 +41,7 @@ export default function AdminStockPage() {
               <TableRow key={p.id}>
                 <TableCell>
                   <div className="relative size-12 overflow-hidden rounded-xl bg-muted">
-                    <Image src={p.image} alt="" fill sizes="48px" className="object-cover" />
+                    <Image src={p.image} alt="" fill sizes="48px" className="object-cover" unoptimized={productImageNeedsUnoptimized(p.image)} />
                   </div>
                 </TableCell>
                 <TableCell className="font-medium">{p.name}</TableCell>
@@ -57,7 +60,11 @@ export default function AdminStockPage() {
                     {availabilityLabel[p.availability] ?? p.availability}
                   </Badge>
                 </TableCell>
-                <TableCell>{formatCurrency(p.price)}</TableCell>
+                <TableCell className="text-muted-foreground">{p.saleUnit === "piece" ? "Pièce" : "Kg"}</TableCell>
+                <TableCell>
+                  {formatCurrency(unitRetailPrice(p))}
+                  <span className="text-muted-foreground"> / {p.saleUnit === "piece" ? "pièce" : "kg"}</span>
+                </TableCell>
                 <TableCell className="text-right">
                   <Button asChild variant="ghost" size="sm" className="rounded-xl">
                     <Link href={`/admin/products/${p.id}/edit`}>Ajuster</Link>

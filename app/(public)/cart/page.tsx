@@ -10,7 +10,8 @@ import { MOCK_PROMOTIONS } from "@/mock/promotions";
 import { useCartStore } from "@/store/cart-store";
 import { useAuthStore } from "@/store/auth-store";
 import { formatCurrency } from "@/lib/format";
-import { formatKgFr, lineSubtotalForWeight, pricePerKg } from "@/lib/product-pricing";
+import { formatKgFr, isPieceProduct, lineSubtotalForWeight, unitRetailPrice } from "@/lib/product-pricing";
+import { productImageNeedsUnoptimized } from "@/lib/product-image";
 import { CartLineQuantityControls } from "@/features/cart/cart-line-quantity-controls";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -39,7 +40,8 @@ export default function CartPage() {
     <div className="mx-auto max-w-6xl px-4 py-12 md:px-8 lg:px-10">
       <h1 className="text-4xl font-bold">Panier</h1>
       <p className="mt-2 text-muted-foreground">
-        Ajustez les lots (portion type du produit) ou le poids au pas de 250&nbsp;g — prix au kg.
+        Ajustez les quantités : au kg (pas de 250&nbsp;g, minimum 250&nbsp;g) ou à la pièce selon le produit — prix au kg ou à la
+        pièce affiché sur la fiche.
       </p>
       <div className="mt-10 grid gap-10 lg:grid-cols-[1.2fr_360px]">
         <div className="space-y-4">
@@ -65,6 +67,7 @@ export default function CartPage() {
                       fill
                       sizes="112px"
                       className="object-cover"
+                      unoptimized={productImageNeedsUnoptimized(p.image)}
                     />
                   )}
                 </div>
@@ -75,7 +78,9 @@ export default function CartPage() {
                         {p.name}
                       </Link>
                       <p className="text-sm text-muted-foreground">
-                        {formatCurrency(pricePerKg(p))} / kg × {formatKgFr(weightKg)} kg
+                        {isPieceProduct(p)
+                          ? `${formatCurrency(unitRetailPrice(p))} / pièce × ${Math.round(weightKg)} pièce(s)`
+                          : `${formatCurrency(unitRetailPrice(p))} / kg × ${formatKgFr(weightKg)} kg`}
                       </p>
                     </>
                   )}

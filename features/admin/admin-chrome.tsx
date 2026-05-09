@@ -25,7 +25,6 @@ const NAV = [
   { href: "/admin/products", icon: Boxes, label: "Produits" },
   { href: "/admin/orders", icon: ClipboardList, label: "Commandes" },
   { href: "/admin/customers", icon: Users, label: "Clients" },
-  { href: "/admin/categories", icon: Boxes, label: "Catégories" },
   { href: "/admin/promotions", icon: Megaphone, label: "Promotions" },
   { href: "/admin/stock", icon: Warehouse, label: "Stocks" },
 ];

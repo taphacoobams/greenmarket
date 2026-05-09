@@ -28,6 +28,8 @@ export type Product = {
   slug: string;
   description: string;
   categoryId: string;
+  /** `kg` : prix pour le lot `weightGrams` · `piece` : prix à la pièce (le panier stocke le nb de pièces dans `weightKg`). */
+  saleUnit: "kg" | "piece";
   price: number;
   oldPrice: number | null;
   stock: number;
@@ -40,15 +42,6 @@ export type Product = {
   promo: boolean;
   bio: boolean;
   availability: ProductAvailability;
-};
-
-export type Category = {
-  id: string;
-  name: string;
-  slug: string;
-  description: string;
-  image: string;
-  productCount: number;
 };
 
 export type CartLine = {

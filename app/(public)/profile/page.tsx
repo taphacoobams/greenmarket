@@ -11,29 +11,29 @@ import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
 import { useAuthStore } from "@/store/auth-store";
 import { useProfileTasteStore } from "@/store/profile-taste-store";
-import { MOCK_CATEGORIES } from "@/mock/categories";
+import { MOCK_PRODUCTS } from "@/mock/products";
 import { getPersonalizedSuggestions } from "@/services/product-service";
 import { ProductCard } from "@/components/shared/product-card";
 import { cn } from "@/lib/utils";
 
 export default function ProfilePage() {
   const user = useAuthStore((s) => s.user);
-  const preferredCategoryIds = useProfileTasteStore((s) => s.preferredCategoryIds);
+  const preferredProductIds = useProfileTasteStore((s) => s.preferredProductIds);
   const preferBio = useProfileTasteStore((s) => s.preferBio);
-  const toggleCategory = useProfileTasteStore((s) => s.toggleCategory);
+  const toggleProduct = useProfileTasteStore((s) => s.toggleProduct);
   const setPreferBio = useProfileTasteStore((s) => s.setPreferBio);
   const clearPreferences = useProfileTasteStore((s) => s.clearPreferences);
 
   const suggestions = useMemo(
     () =>
       getPersonalizedSuggestions(
-        { preferredCategoryIds, preferBio },
+        { preferredProductIds, preferBio },
         8,
       ),
-    [preferredCategoryIds, preferBio],
+    [preferredProductIds, preferBio],
   );
 
-  const hasTastePrefs = preferredCategoryIds.length > 0 || preferBio;
+  const hasTastePrefs = preferredProductIds.length > 0 || preferBio;
 
   if (!user) {
     return (
@@ -89,7 +89,7 @@ export default function ProfilePage() {
                   <h2 className="text-lg font-bold tracking-tight">Mes goûts & recommandations</h2>
                 </div>
                 <p className="max-w-xl text-sm text-muted-foreground">
-                  Indiquez les familles de légumes que vous cuisinez souvent : nous priorisons ces rayons dans vos suggestions
+                  Cochez les légumes que vous cuisinez souvent : nous les mettons en avant dans vos suggestions
                   ci-dessous (mock démo, sauvegardé sur cet appareil).
                 </p>
               </div>
@@ -99,14 +99,14 @@ export default function ProfilePage() {
             </div>
 
             <div className="mt-6 flex flex-wrap gap-2">
-              {MOCK_CATEGORIES.map((cat) => {
-                const on = preferredCategoryIds.includes(cat.id);
+              {MOCK_PRODUCTS.map((prod) => {
+                const on = preferredProductIds.includes(prod.id);
                 return (
                   <button
-                    key={cat.id}
+                    key={prod.id}
                     type="button"
                     aria-pressed={on}
-                    onClick={() => toggleCategory(cat.id)}
+                    onClick={() => toggleProduct(prod.id)}
                     className={cn(
                       "rounded-full border px-3 py-1.5 text-left text-sm font-medium transition",
                       on
@@ -114,7 +114,7 @@ export default function ProfilePage() {
                         : "border-border bg-background text-muted-foreground hover:border-primary/40 hover:bg-accent",
                     )}
                   >
-                    {cat.name}
+                    {prod.name}
                   </button>
                 );
               })}
@@ -142,8 +142,8 @@ export default function ProfilePage() {
                 <h2 className="text-lg font-bold">Suggestions pour vous</h2>
                 <p className="mt-1 text-sm text-muted-foreground">
                   {hasTastePrefs
-                    ? "Basé sur vos familles choisies, l’option bio et les tops du catalogue mock."
-                    : "Choisissez au moins une famille ou activez le bio pour affiner ; sinon voici une sélection populaire."}
+                    ? "Basé sur vos produits choisis, l’option bio et les tops du catalogue mock."
+                    : "Choisissez au moins un produit ou activez le bio pour affiner ; sinon voici une sélection populaire."}
                 </p>
               </div>
               <Button asChild variant="outline" className="rounded-2xl">
@@ -153,8 +153,8 @@ export default function ProfilePage() {
 
             {suggestions.length === 0 ? (
               <p className="mt-8 rounded-2xl border border-dashed border-border px-6 py-12 text-center text-sm text-muted-foreground">
-                Aucun produit ne correspond à ces critères pour l’instant. Désactivez « Prioriser le bio » ou élargissez vos
-                familles.
+                Aucun produit ne correspond à ces critères pour l’instant. Désactivez « Prioriser le bio » ou sélectionnez d’autres
+                références.
               </p>
             ) : (
               <div className="mt-8 grid gap-6 sm:grid-cols-2 xl:grid-cols-3">
@@ -167,11 +167,11 @@ export default function ProfilePage() {
             {hasTastePrefs ? (
               <div className="mt-6 flex flex-wrap gap-2">
                 <span className="text-xs font-medium text-muted-foreground">Actif :</span>
-                {preferredCategoryIds.map((id) => {
-                  const c = MOCK_CATEGORIES.find((x) => x.id === id);
-                  return c ? (
+                {preferredProductIds.map((id) => {
+                  const prod = MOCK_PRODUCTS.find((x) => x.id === id);
+                  return prod ? (
                     <Badge key={id} variant="secondary" className="rounded-full">
-                      {c.name}
+                      {prod.name}
                     </Badge>
                   ) : null;
                 })}

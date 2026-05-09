@@ -4,6 +4,8 @@ import { MOCK_PRODUCTS } from "@/mock/products";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { formatCurrency } from "@/lib/format";
+import { productImageNeedsUnoptimized } from "@/lib/product-image";
+import { oldPricePerKg, unitRetailPrice } from "@/lib/product-pricing";
 
 export default function AdminPromotionsPage() {
   const promos = MOCK_PRODUCTS.filter((p) => p.promo);
@@ -22,8 +24,8 @@ export default function AdminPromotionsPage() {
             <TableRow>
               <TableHead className="w-[72px]" />
               <TableHead>Produit</TableHead>
-              <TableHead>Prix</TableHead>
-              <TableHead>Ancien prix</TableHead>
+              <TableHead>Prix affiché</TableHead>
+              <TableHead>Ancien prix (affiché)</TableHead>
               <TableHead>Stock</TableHead>
               <TableHead />
             </TableRow>
@@ -33,13 +35,23 @@ export default function AdminPromotionsPage() {
               <TableRow key={p.id}>
                 <TableCell>
                   <div className="relative size-12 overflow-hidden rounded-xl bg-muted">
-                    <Image src={p.image} alt="" fill sizes="48px" className="object-cover" />
+                    <Image src={p.image} alt="" fill sizes="48px" className="object-cover" unoptimized={productImageNeedsUnoptimized(p.image)} />
                   </div>
                 </TableCell>
                 <TableCell className="font-medium">{p.name}</TableCell>
-                <TableCell>{formatCurrency(p.price)}</TableCell>
+                <TableCell className="font-medium">
+                  {formatCurrency(unitRetailPrice(p))}
+                  <span className="text-muted-foreground"> / {p.saleUnit === "piece" ? "pièce" : "kg"}</span>
+                </TableCell>
                 <TableCell className="text-muted-foreground">
-                  {p.oldPrice != null ? formatCurrency(p.oldPrice) : "—"}
+                  {p.oldPrice != null ? (
+                    <>
+                      {formatCurrency(oldPricePerKg(p)!)}
+                      <span className="text-muted-foreground"> / {p.saleUnit === "piece" ? "pièce" : "kg"}</span>
+                    </>
+                  ) : (
+                    "—"
+                  )}
                 </TableCell>
                 <TableCell>{p.stock}</TableCell>
                 <TableCell className="text-right">

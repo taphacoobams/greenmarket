@@ -18,7 +18,7 @@ export default function SplashPage() {
       <div className="space-y-3">
         <p className="text-xs font-bold uppercase tracking-[0.35em] text-primary">{BRANDING.name}</p>
         <h1 className="text-3xl font-bold tracking-tight">Bienvenue sur {BRANDING.name}</h1>
-        <p className="text-sm text-muted-foreground">Votre épicerie verte, livrée en toute fraîcheur.</p>
+        <p className="text-sm text-muted-foreground">Vos légumes verts, livrés en toute fraîcheur.</p>
       </div>
       <div className="flex w-full flex-col gap-3">
         <Button asChild className="h-12 rounded-2xl bg-primary hover:bg-brand-dark hover:text-white">

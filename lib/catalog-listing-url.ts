@@ -10,7 +10,6 @@ function appendPriceAndSort(qs: URLSearchParams, sort: ProductSort, priceMinStr:
 
 export type ShopListingUrlState = {
   q: string;
-  cat: string;
   promo: boolean;
   bio: boolean;
   sort: ProductSort;
@@ -28,7 +27,6 @@ export type SearchListingUrlState = {
 export function stringifyShopListingHref(state: ShopListingUrlState): string {
   const qs = new URLSearchParams();
   if (state.q.trim()) qs.set("q", state.q.trim());
-  if (state.cat) qs.set("cat", state.cat);
   if (state.promo) qs.set("promo", "1");
   if (state.bio) qs.set("bio", "1");
   appendPriceAndSort(qs, state.sort, state.priceMinStr, state.priceMaxStr);

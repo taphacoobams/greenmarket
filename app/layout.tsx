@@ -25,7 +25,7 @@ export const metadata: Metadata = {
     template: `%s · ${BRANDING.name}`,
   },
   description:
-    "Légumes et fruits livrés sur Dakar. Commandez avant minuit pour une livraison le lendemain matin.",
+    "Légumes frais livrés sur Dakar. Commandez avant minuit pour une livraison le lendemain matin.",
   icons: {
     icon: BRANDING.favicon,
     shortcut: BRANDING.favicon,

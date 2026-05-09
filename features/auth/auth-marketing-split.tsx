@@ -12,7 +12,7 @@ const COPY: Record<
   { title: string; description: string; bullets: { icon: typeof Truck; text: string }[] }
 > = {
   "client-login": {
-    title: "Vos fruits & légumes frais sur Dakar",
+    title: "Vos légumes frais livrés sur Dakar",
     description:
       "Commandez jusqu’à minuit (heure de Dakar)&nbsp;: livraisons prévues dès le lendemain matin. Suivi simple du panier et des étapes jusqu’à la dépose.",
     bullets: [

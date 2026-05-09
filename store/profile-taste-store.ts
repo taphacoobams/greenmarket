@@ -4,11 +4,10 @@ import { create } from "zustand";
 import { persist } from "zustand/middleware";
 
 export type ProfileTasteState = {
-  /** IDs `MOCK_CATEGORIES` — familles de légumes préférées */
-  preferredCategoryIds: string[];
-  /** Prioriser les produits bio dans les suggestions */
+  /** IDs `MOCK_PRODUCTS` — produits que vous cuisinez souvent */
+  preferredProductIds: string[];
   preferBio: boolean;
-  toggleCategory: (categoryId: string) => void;
+  toggleProduct: (productId: string) => void;
   setPreferBio: (value: boolean) => void;
   clearPreferences: () => void;
 };
@@ -16,20 +15,36 @@ export type ProfileTasteState = {
 export const useProfileTasteStore = create<ProfileTasteState>()(
   persist(
     (set) => ({
-      preferredCategoryIds: [],
+      preferredProductIds: [],
       preferBio: false,
-      toggleCategory: (categoryId) =>
+      toggleProduct: (productId) =>
         set((s) => {
-          const has = s.preferredCategoryIds.includes(categoryId);
+          const has = s.preferredProductIds.includes(productId);
           return {
-            preferredCategoryIds: has
-              ? s.preferredCategoryIds.filter((id) => id !== categoryId)
-              : [...s.preferredCategoryIds, categoryId],
+            preferredProductIds: has
+              ? s.preferredProductIds.filter((id) => id !== productId)
+              : [...s.preferredProductIds, productId],
           };
         }),
       setPreferBio: (value) => set({ preferBio: value }),
-      clearPreferences: () => set({ preferredCategoryIds: [], preferBio: false }),
+      clearPreferences: () => set({ preferredProductIds: [], preferBio: false }),
     }),
-    { name: "gm-profile-taste" },
+    {
+      name: "gm-profile-taste",
+      version: 2,
+      migrate: (persisted, version) => {
+        type Old = { preferredCategoryIds?: string[]; preferredProductIds?: string[]; preferBio?: boolean };
+        const p = persisted as Old;
+        if (version >= 2 && p.preferredProductIds) return persisted as ProfileTasteState & object;
+        return {
+          preferredProductIds: [],
+          preferBio: p.preferBio ?? false,
+        } as ProfileTasteState & object;
+      },
+      partialize: (s) => ({
+        preferredProductIds: s.preferredProductIds,
+        preferBio: s.preferBio,
+      }),
+    },
   ),
 );

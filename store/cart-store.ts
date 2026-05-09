@@ -6,20 +6,21 @@ import type { CartLine } from "@/types";
 import { MOCK_PRODUCTS } from "@/mock/products";
 import { MOCK_PROMOTIONS } from "@/mock/promotions";
 import {
+  clampLineWeight,
   clampMinOrderKg,
   lineSubtotalForWeight,
-  MIN_ORDER_KG,
+  minOrderWeight,
   referenceWeightKg,
+  roundLineWeight,
   roundWeightKg,
 } from "@/lib/product-pricing";
 
 type CartStore = {
   lines: CartLine[];
   promoCode: string | null;
-  /** Ajoute un delta en kg (fusionne avec la ligne existante). */
+  /** Ajoute un delta (kg ou nombre de pièces selon le produit). */
   addKg: (productId: string, deltaKg: number) => void;
   remove: (productId: string) => void;
-  /** Fixe le poids exact ; retire la ligne si en dessous du minimum (0,25 kg). */
   setLineWeightKg: (productId: string, weightKg: number) => void;
   clear: () => void;
   setPromoCode: (code: string | null) => void;
@@ -29,7 +30,7 @@ type CartStore = {
     total: number;
     /** Nombre de lignes produit (références distinctes). */
     count: number;
-    /** Somme des kg du panier */
+    /** Somme des kg (lignes au kg uniquement ; les pièces ne sont pas converties en kg ici). */
     totalKg: number;
   };
 };
@@ -46,18 +47,20 @@ export const useCartStore = create<CartStore>()(
       addKg: (productId, deltaKg) => {
         if (!Number.isFinite(deltaKg) || deltaKg === 0) return;
         set((state) => {
+          const p = findProduct(productId);
+          if (!p) return state;
           const next = [...state.lines];
           const idx = next.findIndex((l) => l.productId === productId);
           if (idx >= 0) {
-            const merged = roundWeightKg(next[idx].weightKg + deltaKg);
-            if (merged < MIN_ORDER_KG - 1e-9) {
+            const merged = roundLineWeight(p, next[idx].weightKg + deltaKg);
+            if (merged < minOrderWeight(p) - 1e-9) {
               return { lines: next.filter((l) => l.productId !== productId) };
             }
-            next[idx] = { productId, weightKg: clampMinOrderKg(merged) };
+            next[idx] = { productId, weightKg: clampLineWeight(p, merged) };
             return { lines: next };
           }
-          if (deltaKg >= MIN_ORDER_KG) {
-            next.push({ productId, weightKg: clampMinOrderKg(deltaKg) });
+          if (deltaKg >= minOrderWeight(p)) {
+            next.push({ productId, weightKg: clampLineWeight(p, deltaKg) });
           }
           return { lines: next };
         });
@@ -69,10 +72,12 @@ export const useCartStore = create<CartStore>()(
       },
       setLineWeightKg: (productId, weightKg) => {
         set((state) => {
-          if (!Number.isFinite(weightKg) || weightKg < MIN_ORDER_KG - 1e-9) {
+          const p = findProduct(productId);
+          if (!p) return state;
+          if (!Number.isFinite(weightKg) || weightKg < minOrderWeight(p) - 1e-9) {
             return { lines: state.lines.filter((l) => l.productId !== productId) };
           }
-          const w = clampMinOrderKg(weightKg);
+          const w = clampLineWeight(p, weightKg);
           const idx = state.lines.findIndex((l) => l.productId === productId);
           if (idx < 0) return { lines: [...state.lines, { productId, weightKg: w }] };
           const next = [...state.lines];
@@ -90,7 +95,7 @@ export const useCartStore = create<CartStore>()(
           const p = findProduct(line.productId);
           if (!p) continue;
           subtotal += lineSubtotalForWeight(p, line.weightKg);
-          totalKg += line.weightKg;
+          if (p.saleUnit !== "piece") totalKg += line.weightKg;
         }
         let discount = 0;
         const promo = MOCK_PROMOTIONS.find(
@@ -99,7 +104,6 @@ export const useCartStore = create<CartStore>()(
         if (promo && promo.percentOff > 0) {
           discount = Math.round((subtotal * promo.percentOff) / 100);
         }
-        /** Nombre de références distinctes dans le panier (lignes). */
         const count = lines.length;
         const totalKgRounded = roundWeightKg(totalKg);
         return {
@@ -113,23 +117,33 @@ export const useCartStore = create<CartStore>()(
     }),
     {
       name: "gm-cart",
-      version: 2,
+      version: 3,
       migrate: (persisted, version) => {
         const state = persisted as {
           lines?: Array<{ productId: string; quantity?: number; weightKg?: number }>;
           promoCode?: string | null;
         };
-        if (!state.lines || version >= 2) return persisted as CartStore & object;
-        const lines: CartLine[] = state.lines.map((l) => {
-          if (typeof l.weightKg === "number") {
-            return { productId: l.productId, weightKg: clampMinOrderKg(l.weightKg) };
-          }
+        if (!state.lines) return persisted as CartStore & object;
+
+        if (version < 2) {
+          const lines: CartLine[] = state.lines.map((l) => {
+            if (typeof l.weightKg === "number") {
+              return { productId: l.productId, weightKg: clampMinOrderKg(l.weightKg) };
+            }
+            const p = findProduct(l.productId);
+            const q = typeof l.quantity === "number" && l.quantity > 0 ? l.quantity : 1;
+            const ref = p ? referenceWeightKg(p) : 1;
+            return { productId: l.productId, weightKg: clampMinOrderKg(q * ref) };
+          });
+          state.lines = lines;
+        }
+
+        const reclamped: CartLine[] = state.lines.map((l) => {
           const p = findProduct(l.productId);
-          const q = typeof l.quantity === "number" && l.quantity > 0 ? l.quantity : 1;
-          const ref = p ? referenceWeightKg(p) : 1;
-          return { productId: l.productId, weightKg: clampMinOrderKg(q * ref) };
+          if (!p || typeof l.weightKg !== "number") return l as CartLine;
+          return { productId: l.productId, weightKg: clampLineWeight(p, l.weightKg) };
         });
-        return { ...state, lines };
+        return { ...state, lines: reclamped };
       },
     },
   ),

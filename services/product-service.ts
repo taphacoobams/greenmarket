@@ -1,6 +1,6 @@
 import type { Product } from "@/types";
 import { MOCK_PRODUCTS } from "@/mock/products";
-import { MOCK_CATEGORIES } from "@/mock/categories";
+import { unitRetailPrice } from "@/lib/product-pricing";
 
 export const PRODUCT_SORT_VALUES = [
   "default",
@@ -26,14 +26,15 @@ export function parseOptionalPositiveInt(raw: string | null | undefined): number
   return n;
 }
 
-/** Min/max `price` in the mocked catalogue — for placeholders and hints only. */
+/** Min/max prix unitaire affiché (FCFA/kg ou FCFA/pièce selon le produit). */
 export function getCatalogPriceRange(): { min: number; max: number } {
   if (!MOCK_PRODUCTS.length) return { min: 0, max: 0 };
   let min = Infinity;
   let max = -Infinity;
   for (const p of MOCK_PRODUCTS) {
-    if (p.price < min) min = p.price;
-    if (p.price > max) max = p.price;
+    const u = unitRetailPrice(p);
+    if (u < min) min = u;
+    if (u > max) max = u;
   }
   return { min, max };
 }
@@ -43,10 +44,10 @@ function applySort(products: Product[], sort: ProductSort): Product[] {
   const copy = [...products];
   switch (sort) {
     case "price-asc":
-      copy.sort((a, b) => a.price - b.price);
+      copy.sort((a, b) => unitRetailPrice(a) - unitRetailPrice(b));
       break;
     case "price-desc":
-      copy.sort((a, b) => b.price - a.price);
+      copy.sort((a, b) => unitRetailPrice(b) - unitRetailPrice(a));
       break;
     case "name-asc":
       copy.sort((a, b) => a.name.localeCompare(b.name, "fr", { sensitivity: "base" }));
@@ -62,7 +63,6 @@ function applySort(products: Product[], sort: ProductSort): Product[] {
 
 export type ProductFilters = {
   query?: string;
-  categorySlug?: string;
   onlyPromo?: boolean;
   onlyBio?: boolean;
   onlyFeatured?: boolean;
@@ -86,10 +86,6 @@ export function filterProducts(filters: ProductFilters): Product[] {
         p.origin.toLowerCase().includes(q),
     );
   }
-  if (filters.categorySlug) {
-    const cat = MOCK_CATEGORIES.find((c) => c.slug === filters.categorySlug);
-    if (cat) list = list.filter((p) => p.categoryId === cat.id);
-  }
   if (filters.onlyPromo) list = list.filter((p) => p.promo);
   if (filters.onlyBio) list = list.filter((p) => p.bio);
   if (filters.onlyFeatured) list = list.filter((p) => p.featured);
@@ -97,8 +93,8 @@ export function filterProducts(filters: ProductFilters): Product[] {
   let minP = filters.minPrice;
   let maxP = filters.maxPrice;
   if (minP != null && maxP != null && minP > maxP) [minP, maxP] = [maxP, minP];
-  if (minP != null) list = list.filter((p) => p.price >= minP);
-  if (maxP != null) list = list.filter((p) => p.price <= maxP);
+  if (minP != null) list = list.filter((p) => unitRetailPrice(p) >= minP);
+  if (maxP != null) list = list.filter((p) => unitRetailPrice(p) <= maxP);
 
   return applySort(list, filters.sort ?? "default");
 }
@@ -108,7 +104,7 @@ export function getFeaturedProducts(limit = 8): Product[] {
 }
 
 export type TastePreferences = {
-  preferredCategoryIds: string[];
+  preferredProductIds: string[];
   preferBio: boolean;
 };
 
@@ -124,12 +120,12 @@ function tasteScore(p: Product): number {
  * Sans aucune préférence : mise en avant des produits featured puis note.
  */
 export function getPersonalizedSuggestions(prefs: TastePreferences, limit = 8): Product[] {
-  const ids = new Set(prefs.preferredCategoryIds);
+  const ids = new Set(prefs.preferredProductIds);
   let pool = [...MOCK_PRODUCTS];
   if (prefs.preferBio) pool = pool.filter((p) => p.bio);
 
-  const preferred = pool.filter((p) => ids.has(p.categoryId));
-  const rest = pool.filter((p) => !ids.has(p.categoryId));
+  const preferred = pool.filter((p) => ids.has(p.id));
+  const rest = pool.filter((p) => !ids.has(p.id));
 
   preferred.sort((a, b) => tasteScore(b) - tasteScore(a));
   rest.sort((a, b) => tasteScore(b) - tasteScore(a));

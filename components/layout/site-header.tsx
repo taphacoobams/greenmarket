@@ -34,7 +34,6 @@ import { CartSheet } from "@/features/cart/cart-sheet";
 import { loginHref } from "@/features/checkout/checkout-auth-gate";
 import { ThemeToggle } from "@/components/layout/theme-toggle";
 import { cn } from "@/lib/utils";
-import { MOCK_CATEGORIES } from "@/mock/categories";
 import { MOCK_PRODUCTS } from "@/mock/products";
 import { formatCurrency, formatDateFr } from "@/lib/format";
 import { formatKgFr } from "@/lib/product-pricing";
@@ -44,9 +43,8 @@ import { useMounted } from "@/hooks/use-mounted";
 const nav = [
   { href: "/", label: "Accueil" },
   { href: "/shop", label: "Catalogue" },
-  { href: "/categories", label: "Catégories" },
   { href: "/promotions", label: "Promos" },
-  { href: "/about", label: "À propos" },
+  { href: "/#a-propos", label: "À propos" },
   { href: "/faq", label: "FAQ" },
   { href: "/contact", label: "Contact" },
 ];
@@ -126,17 +124,17 @@ export function SiteHeader() {
               </div>
               <div className="mt-8 space-y-2">
                 <p className="px-4 text-[0.7rem] font-bold uppercase tracking-wider text-muted-foreground">
-                  Catégories
+                  Produits
                 </p>
                 <div className="flex flex-col gap-1">
-                  {MOCK_CATEGORIES.slice(0, 8).map((c) => (
+                  {MOCK_PRODUCTS.slice(0, 10).map((p) => (
                     <Link
-                      key={c.id}
-                      href={`/categories/${c.slug}`}
+                      key={p.id}
+                      href={`/shop/${p.slug}`}
                       onClick={() => setMobileOpen(false)}
                       className="rounded-2xl px-4 py-2 text-sm text-muted-foreground hover:bg-accent hover:text-accent-foreground"
                     >
-                      {c.name}
+                      {p.name}
                     </Link>
                   ))}
                 </div>
@@ -276,7 +274,9 @@ export function SiteHeader() {
                 </DropdownMenuGroup>
                 <DropdownMenuSeparator />
                 <DropdownMenuGroup>
-                  <DropdownMenuItem onSelect={() => logout()}>Déconnexion</DropdownMenuItem>
+                  <DropdownMenuItem variant="destructive" onClick={() => logout()}>
+                    Déconnexion
+                  </DropdownMenuItem>
                 </DropdownMenuGroup>
               </DropdownMenuContent>
             </DropdownMenu>

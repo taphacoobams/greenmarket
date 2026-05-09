@@ -1,4 +1,3 @@
-export * from "@/mock/categories";
 export * from "@/mock/products";
 export * from "@/mock/users";
 export * from "@/mock/orders";

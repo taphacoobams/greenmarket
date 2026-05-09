@@ -6,7 +6,8 @@ import { getProductBySlug } from "@/services/product-service";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { Card } from "@/components/ui/card";
-import { MOCK_CATEGORIES } from "@/mock/categories";
+import { productImageNeedsUnoptimized } from "@/lib/product-image";
+import { isPieceProduct } from "@/lib/product-pricing";
 import { ProductPurchasePanel } from "@/features/shop/product-purchase-panel";
 import { ProductFavoriteButton } from "@/components/shared/product-favorite-button";
 
@@ -24,7 +25,7 @@ export default async function ProductPage({ params }: Props) {
   const product = getProductBySlug(slug);
   if (!product) notFound();
 
-  const category = MOCK_CATEGORIES.find((c) => c.id === product.categoryId);
+  const pieceProduct = isPieceProduct(product);
 
   return (
     <div className="mx-auto max-w-6xl px-4 py-8 sm:py-12 md:px-8 lg:px-10">
@@ -36,19 +37,19 @@ export default async function ProductPage({ params }: Props) {
           Catalogue
         </Link>
         <span className="shrink-0 opacity-70">/</span>
-        {category && (
-          <>
-            <Link href={`/categories/${category.slug}`} className="shrink-0 hover:text-foreground">
-              {category.name}
-            </Link>
-            <span className="shrink-0 opacity-70">/</span>
-          </>
-        )}
         <span className="min-w-0 break-words font-medium text-foreground">{product.name}</span>
       </nav>
       <div className="grid gap-8 min-[420px]:gap-10 lg:grid-cols-[1.1fr_minmax(0,1fr)]">
         <div className="relative aspect-square max-h-[85vh] w-full overflow-hidden rounded-2xl border border-border bg-muted shadow-[0_40px_120px_-50px_rgb(15_23_42_/_0.45)] min-[520px]:rounded-[2rem] lg:rounded-[2.5rem]">
-          <Image src={product.image} alt={product.name} fill priority className="object-cover" sizes="(min-width:1024px) 520px, 100vw" />
+          <Image
+            src={product.image}
+            alt={product.name}
+            fill
+            priority
+            className="object-cover"
+            sizes="(min-width:1024px) 520px, 100vw"
+            unoptimized={productImageNeedsUnoptimized(product.image)}
+          />
           <div className="absolute left-3 top-3 z-10 flex flex-wrap gap-2 sm:left-6 sm:top-6">
             {product.promo && (
               <Badge className="rounded-full bg-brand-orange text-white hover:bg-brand-orange">Promo</Badge>
@@ -88,7 +89,9 @@ export default async function ProductPage({ params }: Props) {
             <div className="flex flex-wrap items-center gap-4 border-t border-border/70 pt-4 text-sm text-muted-foreground">
               <span className="inline-flex items-center gap-2">
                 <Leaf className="size-4 text-primary" />
-                {(product.weightGrams / 1000).toLocaleString("fr-FR", { maximumFractionDigits: 2 })} kg (réf.)
+                {pieceProduct
+                  ? "Vente à la pièce (réf. catalogue)"
+                  : `${(product.weightGrams / 1000).toLocaleString("fr-FR", { maximumFractionDigits: 2 })} kg (réf.)`}
               </span>
               <span className="inline-flex items-center gap-2">
                 <Truck className="size-4 text-primary" />

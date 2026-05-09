@@ -5,7 +5,6 @@ import { type ReactNode, useMemo, useState, useEffect } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Filter, RotateCcw, SearchIcon } from "lucide-react";
 import { filterProducts, parseOptionalPositiveInt, parseProductSort, type ProductSort, PRODUCT_SORT_VALUES, getCatalogPriceRange } from "@/services/product-service";
-import { MOCK_CATEGORIES } from "@/mock/categories";
 import { ProductCard } from "@/components/shared/product-card";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -23,7 +22,6 @@ import {
 } from "@/components/ui/pagination";
 import { getPaginationWindow } from "@/lib/pagination-window";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Badge } from "@/components/ui/badge";
 import { useDebounce } from "@/hooks/use-debounce";
 import { stringifyShopListingHref } from "@/lib/catalog-listing-url";
 import { PRODUCT_SORT_LABELS_FR } from "@/lib/catalog-sort-labels";
@@ -37,7 +35,6 @@ export function ShopView() {
   const sp = useSearchParams();
   const [query, setQuery] = useState(sp.get("q") ?? "");
   const debounced = useDebounce(query, 250);
-  const [cat, setCat] = useState(sp.get("cat") ?? "");
   const [promo, setPromo] = useState(sp.get("promo") === "1");
   const [bio, setBio] = useState(sp.get("bio") === "1");
   const catalogueRange = useMemo(() => getCatalogPriceRange(), []);
@@ -49,7 +46,6 @@ export function ShopView() {
 
   useEffect(() => {
     setQuery(sp.get("q") ?? "");
-    setCat(sp.get("cat") ?? "");
     setPromo(sp.get("promo") === "1");
     setBio(sp.get("bio") === "1");
     setSort(parseProductSort(sp.get("sort")));
@@ -64,14 +60,13 @@ export function ShopView() {
     () =>
       filterProducts({
         query: debounced || undefined,
-        categorySlug: cat || undefined,
         onlyPromo: promo || undefined,
         onlyBio: bio || undefined,
         minPrice: minPriceBound,
         maxPrice: maxPriceBound,
         sort,
       }),
-    [debounced, cat, promo, bio, minPriceBound, maxPriceBound, sort],
+    [debounced, promo, bio, minPriceBound, maxPriceBound, sort],
   );
 
   const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE));
@@ -87,7 +82,6 @@ export function ShopView() {
   function shopHrefFrom(partial?: Partial<{ sort: ProductSort; priceMinStr: string; priceMaxStr: string }>) {
     return stringifyShopListingHref({
       q: query.trim(),
-      cat,
       promo,
       bio,
       sort: partial?.sort ?? sort,
@@ -111,7 +105,6 @@ export function ShopView() {
           size="xs"
           onClick={() => {
             setQuery("");
-            setCat("");
             setPromo(false);
             setBio(false);
             setSort("default");
@@ -198,62 +191,6 @@ export function ShopView() {
           <p className="col-span-2 text-[0.7rem] text-muted-foreground">Montants en FCFA · encadrent le prix catalogue actuel.</p>
         </div>
       </div>
-      <div className="space-y-2">
-        <p className="text-xs font-semibold text-muted-foreground">Catégories</p>
-        <div className="flex flex-col gap-2">
-          <button
-            type="button"
-            onClick={() => {
-              setCat("");
-              setPage(1);
-              router.replace(
-                stringifyShopListingHref({
-                  q: query.trim(),
-                  cat: "",
-                  promo,
-                  bio,
-                  sort,
-                  priceMinStr,
-                  priceMaxStr,
-                }),
-              );
-            }}
-            className={`rounded-xl px-3 py-2 text-left text-sm ${!cat ? "bg-accent font-semibold" : "hover:bg-muted/60"}`}
-          >
-            Toutes
-          </button>
-          {MOCK_CATEGORIES.map((c) => (
-            <button
-              type="button"
-              key={c.id}
-              onClick={() => {
-                const next = c.slug;
-                setCat(next);
-                setPage(1);
-                router.replace(
-                  stringifyShopListingHref({
-                    q: query.trim(),
-                    cat: next,
-                    promo,
-                    bio,
-                    sort,
-                    priceMinStr,
-                    priceMaxStr,
-                  }),
-                );
-              }}
-              className={`flex items-center justify-between rounded-xl px-3 py-2 text-left text-sm ${
-                cat === c.slug ? "bg-accent font-semibold" : "hover:bg-muted/60"
-              }`}
-            >
-              {c.name}
-              <Badge variant="outline" className="rounded-full text-[0.65rem] tabular-nums">
-                {c.productCount}
-              </Badge>
-            </button>
-          ))}
-        </div>
-      </div>
       <div className="space-y-4">
         <div className="flex items-center gap-3">
           <Checkbox
@@ -266,7 +203,6 @@ export function ShopView() {
               router.replace(
                 stringifyShopListingHref({
                   q: query.trim(),
-                  cat,
                   promo: next,
                   bio,
                   sort,
@@ -291,7 +227,6 @@ export function ShopView() {
               router.replace(
                 stringifyShopListingHref({
                   q: query.trim(),
-                  cat,
                   promo,
                   bio: next,
                   sort,

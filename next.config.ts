@@ -5,6 +5,10 @@ const isDev = process.env.NODE_ENV === "development";
 const nextConfig: NextConfig = {
   async redirects() {
     return [
+      { source: "/categories", destination: "/shop", permanent: true },
+      { source: "/categories/:path*", destination: "/shop", permanent: true },
+      { source: "/about", destination: "/", permanent: true },
+      { source: "/admin/categories", destination: "/admin/products", permanent: false },
       { source: "/admin/reports", destination: "/admin", permanent: false },
       { source: "/admin/payments", destination: "/admin", permanent: false },
       { source: "/admin/settings", destination: "/admin", permanent: false },
